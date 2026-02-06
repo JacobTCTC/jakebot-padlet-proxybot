@@ -1,21 +1,30 @@
-[2026-02-05T02:36:20.462Z] === JakeBot Starting ===
-[2026-02-05T02:36:31.772Z] Navigating to login page...
-[2026-02-05T02:36:35.747Z] Navigating to Padlet board...
-[2026-02-05T02:37:37.575Z] 📄 HTML snapshot saved
-[2026-02-05T02:37:37.576Z] 🔍 Starting watch loop...
-[2026-02-05T02:39:44.175Z] ❌ Proxy error: page.keyboard.hold is not a function
-[2026-02-05T02:39:49.176Z] 🔄 Refreshing page...
-[2026-02-05T02:40:01.412Z] 📄 HTML snapshot saved
-[2026-02-05T02:43:17.822Z] === JakeBot Starting ===
-[2026-02-05T02:43:29.508Z] Navigating to login page...
-[2026-02-05T02:43:33.502Z] Navigating to Padlet board...
-[2026-02-05T02:44:34.632Z] 📄 HTML snapshot saved
-[2026-02-05T02:44:34.633Z] 🔍 Starting watch loop...
-[2026-02-05T02:45:13.043Z] ✅ Proxied post: Jacob Butcher Jri-creator
-less than a mi...
-[2026-02-05T02:45:18.045Z] 🔄 Refreshing page...
-[2026-02-05T02:45:30.379Z] 📄 HTML snapshot saved
-[2026-02-05T02:47:28.448Z] ✅ Proxied post: Jacob Butcher Jri-creator
-less than a mi...
-[2026-02-05T02:47:33.449Z] 🔄 Refreshing page...
-[2026-02-05T02:47:46.077Z] 📄 HTML snapshot saved
+[2026-02-05T23:37:57.736Z] === Jake Proxy Bot Starting ===
+[2026-02-05T23:38:26.430Z] 👀 Watching Padlet…
+[2026-02-05T23:39:05.766Z] 📝 Proxying as Jake: "I am Jake, and I'm testing the bot Jacob made me."
+[2026-02-05T23:39:39.317Z] 📝 Proxying as Jake: "Jake: BOT OFF"
+[2026-02-05T23:42:04.219Z] ❌ Error: page.goto: net::ERR_ABORTED at https://padlet.com/padlets/qjrhalto59z8efms/exports/markdown.md
+Call log:
+[2m  - navigating to "https://padlet.com/padlets/qjrhalto59z8efms/exports/markdown.md", waiting until "load"[22m
+
+[2026-02-05T23:44:19.704Z] === Proxy Watcher Starting ===
+[2026-02-05T23:44:50.840Z] 👀 Watching for new posts…
+[2026-02-05T23:45:03.494Z] 🚨 Signal detected in "🐨I am Jake, and I'm testing the bot Jacob made me."
+[2026-02-05T23:45:03.494Z] 📨 Proxying post: "I am Jake, and I'm testing the bot Jacob made me."
+[2026-02-05T23:45:09.886Z] 📤 Proxy post submitted
+[2026-02-05T23:45:11.886Z] 🗑️ Attempting to delete original post…
+[2026-02-05T23:45:12.762Z] ✅ Original post deleted
+[2026-02-05T23:45:49.457Z] 🚨 Signal detected in "[Jake: BOT OFF]"
+[2026-02-05T23:45:49.458Z] 📨 Proxying post: "Jake: BOT OFF"
+[2026-02-05T23:45:50.801Z] 📤 Proxy post submitted
+[2026-02-05T23:45:52.801Z] 🗑️ Attempting to delete original post…
+[2026-02-05T23:45:53.655Z] ✅ Original post deleted
+[2026-02-05T23:53:01.218Z] ❌ Loop error: page.goto: net::ERR_ABORTED at https://padlet.com/padlets/qjrhalto59z8efms/exports/markdown.md
+Call log:
+[2m  - navigating to "https://padlet.com/padlets/qjrhalto59z8efms/exports/markdown.md", waiting until "load"[22m
+
+[2026-02-06T01:16:36.106Z] === JakeBot 🐨 Starting ===
+[2026-02-06T01:17:34.022Z] 👀 Watching for new posts…
+[2026-02-06T01:27:40.136Z] ❌ Loop error: page.goto: net::ERR_ABORTED at https://padlet.com/padlets/qjrhalto59z8efms/exports/markdown.md
+Call log:
+[2m  - navigating to "https://padlet.com/padlets/qjrhalto59z8efms/exports/markdown.md", waiting until "load"[22m
+
