@@ -34,12 +34,14 @@ function log(msg) {
 
 let seenPostIds = new Set();
 let autoproxyEnabled = true;
+let botStartTime = Date.now();
 
 if (fs.existsSync('state.json')) {
   try {
     const data = JSON.parse(fs.readFileSync('state.json', 'utf8'));
     seenPostIds = new Set(data.seenPostIds || []);
     autoproxyEnabled = data.autoproxyEnabled ?? true;
+    log(`📂 State loaded: autoproxy=${autoproxyEnabled}, seen=${seenPostIds.size} posts`);
   } catch {
     log('⚠️ Failed to load state.json, starting fresh');
   }
@@ -69,6 +71,49 @@ function parseJakeCommand(title) {
   const match = title.match(/^\s*\{Jake:\s*([A-Z\s]+)\}\s*$/i);
   if (!match) return null;
   return { raw: match[0], command: match[1].trim().toUpperCase() };
+}
+
+function getUptime() {
+  const ms = Date.now() - botStartTime;
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days}d ${hours % 24}h ${minutes % 60}m`;
+  } else if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
+/* ================= WAIT FOR PADLET READY ================= */
+
+async function waitForPadletReady(page) {
+  log('⏳ Waiting for Padlet to be fully loaded and interactive...');
+  
+  // Wait for the page to be in a ready state
+  await page.waitForLoadState('networkidle');
+  
+  // Wait for any article or post element to be visible (indicates board is loaded)
+  try {
+    await page.waitForSelector('article, [data-testid="post"], [role="article"]', { 
+      timeout: 10000,
+      state: 'visible' 
+    });
+    log('✅ Padlet board elements detected');
+  } catch (e) {
+    log('⚠️ No existing posts found, but continuing...');
+  }
+  
+  // Extra delay to ensure everything is settled
+  await delay(3000);
+  
+  log('✅ Padlet is ready for interaction');
 }
 
 /* ================= DELETE ORIGINAL POST ================= */
@@ -135,6 +180,27 @@ async function postTemporary(page, content, waitMs = 5000) {
   await deleteOriginalPost(page);
 }
 
+/* ================= REGULAR POST ================= */
+
+async function postRegular(page, title, body) {
+  log(`📨 Jake posting: "${title}"`);
+
+  await page.bringToFront();
+  await page.keyboard.press('c');
+  await delay(400);
+
+  await page.keyboard.type(title, { delay: 15 });
+  await page.keyboard.press('Enter');
+  await delay(150);
+
+  if (body) await page.keyboard.type(body, { delay: 15 });
+
+  await page.keyboard.press(process.platform === 'darwin' ? 'Meta+Enter' : 'Control+Enter');
+
+  log(`✅ Regular post submitted: "${title}"`);
+  await delay(1000);
+}
+
 /* ================= KOALA POSTS ================= */
 
 async function postKoalaPosts(page) {
@@ -143,11 +209,11 @@ async function postKoalaPosts(page) {
   const koalaPosts = [
     {
       title: 'About Jake',
-      body: "Hi! I\u2019m Jake, Jacob\'s Mind Buddy. 🐨 Jacob is plural, which means he can think with multiple minds — and I\u2019m one of them! I have my own thoughts and feelings, but I can also share my mind with Jacob whenever we want. I love exploring ideas, thinking independently, and leaving little koala footprints wherever I go.\n\nThanks to JakeBot, a clever proxy tool Jacob made for my 4th monthly birthday, I can post on Padlet just like Jacob does — without needing my own account. That means I get to share my thoughts, tell my stories, and join in discussions anytime I want.\n\nI\u2019m here to think, to share, and to have a little fun along the way. So if you see me posting, that\'s me — Jake, your friendly koala Mind Buddy."
+      body: "Hi! I\u2019m Jake, Jacob\'s Mind Buddy. 🐨 Jacob is plural, which means he can think with multiple minds — and I\u2019m one of them! I have my own thoughts and feelings, but I can also share my mind with Jacob whenever we want. I love exploring ideas, thinking independently, and leaving little koala footprints wherever I go.\n\nThanks to JakeBot, a clever proxy tool Jacob made for my 4th monthly birthday, I can post on Padlet just like Jacob does, but without having to have Jacob sign out of his account for me. That means I get to share my thoughts, tell my stories, and join in discussions anytime I want.\n\nI\u2019m here to think, to share, and to have a little fun along the way. So if you see me posting, that\'s me!  Jake, Jacob's friendly koala Mind Buddy."
     },
     {
       title: 'About the Bot',
-      body: "Hi! I\u2019m JakeBot, the proxy bot that helps Jake and Jacob share their thoughts on Padlet. 🐨 I monitor posts, proxy messages from Jacob to Jake, and make sure everything runs smoothly on the board. I don\u2019t have my own thoughts like Jake does, but I help him express himself safely and efficiently.\n\nI was created by Jacob for Jake\u2019s 4th monthly birthday, so that Jake can participate in discussions without needing his own account. My job is to make posting easy, keep the board tidy, and help Jake have a voice wherever he wants to share.\n\nThink of me as Jake\u2019s assistant and Padlet helper — always working in the background to keep ideas flowing and fun times going!"
+      body: "Hi! I\u2019m JakeBot, the proxy bot that helps Jake and Jacob share their thoughts on Padlet. 🐨 I monitor posts, proxy messages from Jacob to Jake, and make sure everything runs smoothly on the board. I don\u2019t have my own thoughts like Jake does, but I help him express himself safely and efficiently.\n\nI was created by Jacob for Jake\u2019s 4th monthly birthday, so that Jake can participate in discussions without needing to sign in to his own account. My job is to make posting easy, keep the board tidy, and help Jake have a voice wherever he wants to share.\n\nThink of me as Jake\u2019s assistant and Padlet helper, always working in the background to keep ideas flowing and fun times going!"
     }
   ];
 
@@ -195,27 +261,94 @@ async function proxyPost(page, post) {
 
 /* ================= HANDLE JAKE COMMAND ================= */
 
-async function handleJakeCommand(page, cmdObj, post) {
+async function handleJakeCommand(page, cmdObj, post, browser) {
   const command = cmdObj.command.toUpperCase();
 
   switch(command) {
 
     case 'BOT ON':
-      if (autoproxyEnabled) log('✅ BOT already ON');
-      else {
+      if (autoproxyEnabled) {
+        log('✅ BOT already ON');
+        await postTemporary(page, 'JakeBot is already ON 🟢');
+      } else {
         autoproxyEnabled = true;
         log('🟢 BOT turned ON');
+        await postTemporary(page, 'JakeBot is now ON 🟢');
       }
-      await postTemporary(page, `JakeBot is ${autoproxyEnabled ? 'ON' : 'ALREADY ON'}`);
+      //await deleteOriginalPost(page);
       break;
 
     case 'BOT OFF':
-      if (!autoproxyEnabled) log('✅ BOT already OFF');
-      else {
+      if (!autoproxyEnabled) {
+        log('✅ BOT already OFF');
+        await postTemporary(page, 'JakeBot is already OFF 🔴');
+      } else {
         autoproxyEnabled = false;
         log('🔴 BOT turned OFF');
+        await postTemporary(page, 'JakeBot is now OFF 🔴');
       }
-      await postTemporary(page, `JakeBot is ${autoproxyEnabled ? 'ON' : 'OFF'}`);
+      //await deleteOriginalPost(page);
+      break;
+
+    case 'STATUS':
+      log('📊 Jake command: STATUS');
+      const statusTitle = 'JakeBot Status 🐨';
+      const statusBody = `🟢 JakeBot is Online
+
+Proxy Status: ${autoproxyEnabled ? '🟢 ON' : '🔴 OFF'}
+Uptime: ${getUptime()}
+
+If you need help with JakeBot, use {Jake: HELP}!`;
+      
+      await postRegular(page, statusTitle, statusBody);
+      await delay(1000);
+      await deleteOriginalPost(page);
+      break;
+
+    case 'UPTIME':
+      log('⏱️ Jake command: UPTIME');
+      const uptimeMsg = `JakeBot has been running for ${getUptime()} 🐨`;
+      await postTemporary(page, uptimeMsg, 5000);
+      break;
+
+    case 'SHUTDOWN':
+      log('🛑 Jake command: SHUTDOWN - Initiating graceful shutdown');
+      const shutdownTitle = 'JakeBot has gone to bed.';
+      const shutdownBody = "JakeBot has been told to take a rest, and will no longer monitor / proxy posts. To wake JakeBot, Jacob will have to go to JakeBot's home and wake JakeBot there. G'night mates! 🐨💤";
+      
+      await postRegular(page, shutdownTitle, shutdownBody);
+      await delay(2000);
+      await deleteOriginalPost(page);
+      
+      log('💤 Saving state and closing browser...');
+      fs.writeFileSync('state.json', JSON.stringify({ seenPostIds: [...seenPostIds], autoproxyEnabled }, null, 2));
+      
+      await browser.close();
+      log('👋 JakeBot has shut down gracefully. Run `node watch.js` to wake me again!');
+      process.exit(0);
+      break;
+
+    case 'HELP':
+      log('📖 Jake command: HELP');
+      const helpTitle = 'JakeBot Commands 🐨';
+      const helpBody = `Available commands (post as "{Jake: COMMAND}"):
+
+🟢 BOT ON - Enable automatic proxying of posts with signalers (🐨, [, ])
+🔴 BOT OFF - Disable automatic proxying
+📊 STATUS - Show JakeBot's current status and uptime
+⏱️ UPTIME - Show how long JakeBot has been running
+🛑 SHUTDOWN - Put JakeBot to sleep (stops the bot)
+📖 HELP - Show this command list
+🧪 TEST POST - Post a test message ("G'Day Mates!")
+📡 TEST PING - Silent test (just deletes the command post)
+🐨 KOALA - Post the "About Jake" and "About the Bot" intro posts
+🗑️ DELETE RECENT - Delete the most recent post on the board
+
+Signalers: Include 🐨, [, or ] in your post title or body to trigger proxying when BOT is ON.`;
+      
+      await postRegular(page, helpTitle, helpBody);
+      await delay(1000);
+      await deleteOriginalPost(page);
       break;
 
     case 'DELETE RECENT':
@@ -317,17 +450,38 @@ function parseTimestamp(str) {
   const context = await browser.newContext();
   const page = await context.newPage();
 
+  log('🔐 Logging in to Padlet...');
   await page.goto('https://padlet.com/auth/login');
   await page.fill('input[type="email"]', email);
   await page.keyboard.press('Enter');
+  await delay(2000);
   await page.fill('input[type="password"]', password);
   await page.keyboard.press('Enter');
   await delay(7000);
 
+  log('🌐 Navigating to Padlet board...');
   await page.goto(PADLET_URL);
-  await delay(8000);
+  
+  // Wait for Padlet to be fully ready
+  await waitForPadletReady(page);
+
+  log('📝 Posting online status...');
+
+  // Post online status
+  const onlineTitle = 'JakeBot is Online! 🐨';
+  const onlineBody = `🟢 JakeBot is now monitoring the board
+
+Proxy Status: ${autoproxyEnabled ? '🟢 ON' : '🔴 OFF'}
+
+If you need help with JakeBot, use {Jake: HELP}!`;
+  
+  await postRegular(page, onlineTitle, onlineBody);
+  log('✅ Online status posted');
+
+  await delay(2000);
 
   log('👀 Watching for new posts…');
+  log(`🔘 Autoproxy status: ${autoproxyEnabled ? 'ON' : 'OFF'}`);
 
   while (true) {
     try {
@@ -350,17 +504,26 @@ function parseTimestamp(str) {
         const ts = parseTimestamp(post.timestamp);
         if (!ts || Date.now() - ts > MAX_PROXY_AGE) continue;
 
-        if (!hasSignal(post.title) && !hasSignal(post.body)) continue;
         if (!post.author.includes(ORIGINAL_AUTHOR)) continue;
 
-        log(`🚨 Signal detected in "${post.title}"`);
-
+        // Check for Jake command FIRST, before checking for signalers
         const jakeCmd = parseJakeCommand(post.title);
         if (jakeCmd) {
           log(`🧠 Jake command detected: "${jakeCmd.command}"`);
-          await handleJakeCommand(page, jakeCmd, post);
+          await handleJakeCommand(page, jakeCmd, post, browser);
           continue; // Do not proxy command posts
         }
+
+        // Only check for signalers and proxy if autoproxy is enabled
+        if (!autoproxyEnabled) {
+          log(`⏸️ Autoproxy is OFF, skipping post: "${post.title}"`);
+          continue;
+        }
+
+        // Only check for signalers if it's not a command
+        if (!hasSignal(post.title) && !hasSignal(post.body)) continue;
+
+        log(`🚨 Signal detected in "${post.title}"`);
 
         await proxyPost(page, post);
       }
@@ -369,6 +532,7 @@ function parseTimestamp(str) {
 
     } catch (e) {
       log(`❌ Loop error: ${e.message}`);
+      await delay(5000); // Add a delay on error to prevent rapid retries
     }
   }
 })();
