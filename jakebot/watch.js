@@ -471,16 +471,16 @@ If you need help with JakeBot, use {${MIND_BUDDY_NAME}: HELP}!`;
       const helpTitle = 'JakeBot Commands 🐨';
       const helpBody = `Available commands (post as "{${MIND_BUDDY_NAME}: COMMAND}"):
 
-🟢 BOT ON - Enable automatic proxying of posts with signalers (${SIGNALERS.join(', ')})
-🔴 BOT OFF - Disable automatic proxying
-📊 STATUS - Show JakeBot's current status and uptime
-⏱️ UPTIME - Show how long JakeBot has been running
-🛑 SHUTDOWN - Put JakeBot to sleep (stops the bot)
-📖 HELP - Show this command list
-🧪 TEST POST - Post a test message ("G'Day Mates!")
-📡 TEST PING - Silent test (just deletes the command post)
-🐨 ABOUT - Post the "About ${MIND_BUDDY_NAME}" and "About the Bot" intro posts
-🗑️ DELETE RECENT - Delete the most recent post on the board
+🟢 {Jake: BOT ON} - Enable automatic proxying of posts with signalers (${SIGNALERS.join(', ')})
+🔴 {Jake: BOT OFF} - Disable automatic proxying
+📊 {Jake: STATUS} - Show JakeBot's current status and uptime
+⏱️ {Jake: UPTIME} - Show how long JakeBot has been running
+🛑 {Jake: SHUTDOWN} - Put JakeBot to sleep (stops the bot)
+📖 {Jake: HELP} - Show this command list
+🧪 {Jake: TEST POST} - Post a test message ("G'Day Mates!")
+📡 {Jake: TEST PING} - Silent test (just deletes the command post)
+🐨 {Jake: ABOUT} - Post the "About ${MIND_BUDDY_NAME}" and "About the Bot" intro posts
+🗑️ {Jake: DELETE RECENT} - Delete the most recent post on the board
 
 Signalers: Include ${SIGNALERS.join(', ')} in your post title or body to trigger proxying when BOT is ON.`;
       
